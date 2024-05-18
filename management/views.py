@@ -43,6 +43,27 @@ class DoctorAvailabilityListCreate(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save()
+        
+        
+        
+        
+class DoctorAvailabilityList(generics.ListAPIView):
+    serializer_class = DoctorAvailabilitySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return DoctorAvailability.objects.filter(doctor=user.doctorprofile)
+    
+    
+class DoctorAvailabilityDetail(generics.RetrieveUpdateDestroyAPIView):
+    queryset = DoctorAvailability.objects.all()
+    serializer_class = DoctorAvailabilitySerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return DoctorAvailability.objects.filter(doctor=user.doctorprofile)
 
 
 

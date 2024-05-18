@@ -2,13 +2,18 @@ from rest_framework import serializers
 from .models import DoctorAvailability
 
 class DoctorAvailabilitySerializer(serializers.ModelSerializer):
-    days_of_week = serializers.ListField(child=serializers.ChoiceField(choices=DoctorAvailability.DAY_CHOICES))
+    days_of_week = serializers.ListField(
+        child=serializers.ChoiceField(choices=DoctorAvailability.DAY_CHOICES),
+        allow_empty=False
+    )
 
     class Meta:
         model = DoctorAvailability
-        fields = ['doctor', 'consultation_category', 'days_of_week', 'start_time', 'end_time', 'recurring_monthly']
+        fields = ['id', 'doctor', 'consultation_category', 'days_of_week', 'start_time', 'end_time', 'recurring_monthly']
 
     def validate_days_of_week(self, value):
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Expected a list of items but got type 'str'.")
         day_choices = [choice[0] for choice in DoctorAvailability.DAY_CHOICES]
         for day in value:
             if day not in day_choices:
@@ -16,11 +21,9 @@ class DoctorAvailabilitySerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        days_of_week = ','.join(validated_data.pop('days_of_week'))
-        validated_data['days_of_week'] = days_of_week
+        validated_data['days_of_week'] = ','.join(validated_data['days_of_week'])
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
-        days_of_week = ','.join(validated_data.pop('days_of_week'))
-        validated_data['days_of_week'] = days_of_week
+        validated_data['days_of_week'] = ','.join(validated_data['days_of_week'])
         return super().update(instance, validated_data)

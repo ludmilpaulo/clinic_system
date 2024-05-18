@@ -1,35 +1,32 @@
-# views.py
+from appointments.models import Appointment
+from rest_framework import generics, permissions
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from management.models import DoctorAvailability
+from .serializers import DoctorAvailabilitySerializer, AppointmentSerializer
+class DoctorAvailabilityByCategory(APIView):
+    permission_classes = [IsAuthenticated]
 
-from rest_framework import viewsets
-from .models import Appointment, DoctorProfile, ConsultationCategory
-from .serializers import AppointmentSerializer, DoctorProfileSerializer, ConsultationCategorySerializer
-from django.utils.timezone import make_aware
-from datetime import datetime
+    def get(self, request, category_id):
+        availabilities = DoctorAvailability.objects.filter(consultation_category=category_id)
+        serializer = DoctorAvailabilitySerializer(availabilities, many=True)
+        return Response(serializer.data)
 
-class ConsultationCategoryViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = ConsultationCategory.objects.all()
-    serializer_class = ConsultationCategorySerializer
-
-class DoctorProfileViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = DoctorProfileSerializer
-
-    def get_queryset(self):
-        category_id = self.request.query_params.get('category')
-        if category_id:
-            return DoctorProfile.objects.filter(category_id=category_id)
-        return DoctorProfile.objects.all()
-
-class AppointmentViewSet(viewsets.ModelViewSet):
+class AppointmentCreateView(generics.CreateAPIView):
     queryset = Appointment.objects.all()
     serializer_class = AppointmentSerializer
+    permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        queryset = super().get_queryset()
-        doctor_id = self.request.query_params.get('doctor')
-        date_time = self.request.query_params.get('datetime')
+    def perform_create(self, serializer):
+        try:
+            serializer.save(patient=self.request.user.patientprofile)
+        except Exception as e:
+            logger.error(f"Error creating appointment: {e}")
+            raise
 
-        if doctor_id and date_time:
-            aware_date_time = make_aware(datetime.fromisoformat(date_time))
-            queryset = queryset.filter(doctor_id=doctor_id, appointment_time=aware_date_time)
-
-        return queryset
+    def create(self, request, *args, **kwargs):
+        logger.info(f"Request data: {request.data}")
+        response = super().create(request, *args, **kwargs)
+        logger.info(f"Response data: {response.data}")
+        return response

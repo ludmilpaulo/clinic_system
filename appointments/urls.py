@@ -1,12 +1,7 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from .views import AppointmentViewSet, DoctorProfileViewSet, ConsultationCategoryViewSet
-
-router = DefaultRouter()
-router.register(r'appointments', AppointmentViewSet)
-router.register(r'doctors', DoctorProfileViewSet)
-router.register(r'categories', ConsultationCategoryViewSet)
+from django.urls import path
+from .views import DoctorAvailabilityByCategory, AppointmentCreateView
 
 urlpatterns = [
-    path('', include(router.urls)),
+    path('doctor-availability/<int:category_id>/', DoctorAvailabilityByCategory.as_view(), name='doctor-availability-by-category'),
+    path('appointments/', AppointmentCreateView.as_view(), name='appointment-create'),
 ]
