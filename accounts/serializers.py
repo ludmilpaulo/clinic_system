@@ -17,7 +17,8 @@ class PatientProfileSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class DoctorProfileSerializer(serializers.ModelSerializer):
-    user = UserSerializer()
+    user = UserSerializer(read_only=True)
+    consultation_category = serializers.PrimaryKeyRelatedField(queryset=ConsultationCategory.objects.all())
 
     class Meta:
         model = DoctorProfile

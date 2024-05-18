@@ -1,14 +1,31 @@
+from rest_framework.permissions import AllowAny
+from django.contrib.auth import authenticate, login
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
 from django.contrib.auth.models import User
 from django.http import JsonResponse
-from rest_framework.decorators import api_view
 from rest_framework.authtoken.models import Token
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import DoctorProfile, PatientProfile, Document, ConsultationCategory
+from .models import ConsultationCategory, DoctorProfile, PatientProfile, Document
+
+
 
 from rest_framework import generics, permissions
 
+from .serializers import ConsultationCategorySerializer, DoctorProfileSerializer
+import logging
+import json
+from rest_framework import generics, permissions
+
 from .serializers import DoctorProfileSerializer
+
+
+from django.http import Http404
+
+
+
+logger = logging.getLogger(__name__)
 
 class DoctorProfileDetail(generics.RetrieveUpdateAPIView):
     queryset = DoctorProfile.objects.all()
@@ -16,11 +33,26 @@ class DoctorProfileDetail(generics.RetrieveUpdateAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self):
-        doctor_id = self.kwargs['doctor_id']
-        return DoctorProfile.objects.get(pk=doctor_id)
+        user_id = self.kwargs['doctor_id']
+        logger.info(f"Retrieving DoctorProfile for user ID: {user_id}")
+        try:
+            return DoctorProfile.objects.get(user_id=user_id)
+        except DoctorProfile.DoesNotExist:
+            logger.error(f"DoctorProfile for user ID {user_id} does not exist.")
+            raise Http404("DoctorProfile does not exist")
+
+    def update(self, request, *args, **kwargs):
+        logger.info(f"Received data: {json.dumps(request.data, indent=4)}")
+        try:
+            return super().update(request, *args, **kwargs)
+        except Exception as e:
+            logger.error(f"Error updating DoctorProfile: {e}")
+            raise
+
 
 
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def custom_signup(request, format=None):
     print("Received data:", request.data)
     if request.method == 'POST':
@@ -30,7 +62,8 @@ def custom_signup(request, format=None):
             password = request.data.get("password")
             user_type = request.data.get("user_type")
 
-            name = request.data.get("name")
+            #name = request.data.get("name")
+            name = username
             surname = request.data.get("surname")
             phone_number = request.data.get("phone_number")
             id_number_or_passport = request.data.get("id_number_or_passport")
@@ -143,8 +176,8 @@ def custom_signup(request, format=None):
 
 
 
-
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def custom_login(request, format=None):
     print("Received data:", request.data)
     if request.method == 'POST':
@@ -160,6 +193,7 @@ def custom_login(request, format=None):
                                      'token':token.key,
                                         'user_id':user.pk,
                                         'username':user.username,
+                                        "status": 201
                                      }, status=200)
             else:
                 return JsonResponse({"error": "Invalid credentials"}, status=400)
@@ -168,4 +202,9 @@ def custom_login(request, format=None):
     return JsonResponse({"error": "Method not allowed"}, status=405)
 
 
+
+class ConsultationCategoryListCreate(generics.ListCreateAPIView):
+    queryset = ConsultationCategory.objects.all()
+    serializer_class = ConsultationCategorySerializer
+    permission_classes = [permissions.IsAuthenticated]
 
