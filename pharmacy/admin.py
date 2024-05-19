@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Drug, Prescription, PrescriptionDrug
+from .models import Drug, Image, Prescription, PrescriptionDrug
 
 class DrugAdmin(admin.ModelAdmin):
     list_display = ('name', 'price', 'quantity_available')
@@ -23,7 +23,9 @@ class PrescriptionDrugAdmin(admin.ModelAdmin):
     list_display = ('prescription', 'drug', 'quantity')
     list_filter = ('drug',)
     search_fields = ('prescription__prescription_number', 'drug__name')
-
+@admin.register(Image)
+class ImageAdmin(admin.ModelAdmin):
+    pass
 # Register your models here.
 admin.site.register(Drug, DrugAdmin)
 admin.site.register(Prescription, PrescriptionAdmin)

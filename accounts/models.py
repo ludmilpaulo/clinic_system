@@ -14,6 +14,11 @@ class BaseProfile(models.Model):
     class Meta:
         abstract = True
 
+class PatientProfile(BaseProfile):
+    def __str__(self):
+        return f"Patient: {self.name} {self.surname}"
+
+
 class ConsultationCategory(models.Model):
     name = models.CharField(max_length=100)
 
@@ -34,9 +39,6 @@ class ConcreteDoctorProfile(DoctorProfile):
         verbose_name_plural = "Concrete Doctor Profiles"
 
 
-class PatientProfile(BaseProfile):
-    def __str__(self):
-        return f"Patient: {self.name} {self.surname}"
 
 
 

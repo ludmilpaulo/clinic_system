@@ -4,12 +4,12 @@ from .models import DoctorAvailability
 class DoctorAvailabilitySerializer(serializers.ModelSerializer):
     days_of_week = serializers.ListField(
         child=serializers.ChoiceField(choices=DoctorAvailability.DAY_CHOICES),
-        allow_empty=False
+        allow_empty=True
     )
 
     class Meta:
         model = DoctorAvailability
-        fields = ['id', 'doctor', 'consultation_category', 'days_of_week', 'start_time', 'end_time', 'recurring_monthly']
+        fields = ['id', 'doctor', 'consultation_category', 'days_of_week', 'day_of_month', 'start_time', 'end_time', 'year', 'month', 'recurring_monthly']
 
     def validate_days_of_week(self, value):
         if not isinstance(value, list):
@@ -21,9 +21,9 @@ class DoctorAvailabilitySerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
-        validated_data['days_of_week'] = ','.join(validated_data['days_of_week'])
+        validated_data['days_of_week'] = ','.join(validated_data['days_of_week']) if validated_data['days_of_week'] else ''
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
-        validated_data['days_of_week'] = ','.join(validated_data['days_of_week'])
+        validated_data['days_of_week'] = ','.join(validated_data['days_of_week']) if validated_data['days_of_week'] else ''
         return super().update(instance, validated_data)
