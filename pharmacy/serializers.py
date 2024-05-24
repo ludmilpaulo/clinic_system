@@ -67,6 +67,7 @@ class MedicalRecordSerializer(serializers.ModelSerializer):
         return obj.doctor.user.username if obj.doctor else 'Unknown'
 
 
+
 class DrugSerializer(serializers.ModelSerializer):
     image_urls = serializers.SerializerMethodField()
     category_name = serializers.CharField(source='category.name', read_only=True)
@@ -80,7 +81,7 @@ class DrugSerializer(serializers.ModelSerializer):
             request = self.context.get('request')
             if request is not None:
                 return [request.build_absolute_uri(image.image.url) for image in obj.images.all()]
-        return None
+        return []
 
 
 ######################################################################################

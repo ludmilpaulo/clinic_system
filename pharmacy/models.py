@@ -1,26 +1,46 @@
 import uuid
-from django.contrib.auth.models import User
 from django.db import models
 from django_ckeditor_5.fields import CKEditor5Field
 
-from accounts.models import ConsultationCategory, DoctorProfile, PatientProfile
+from accounts.models import DoctorProfile, PatientProfile
+
 
 class Image(models.Model):
     image = models.ImageField(max_length=3000, default=None, blank=True, upload_to='drug_images/')
-    
+
     def __str__(self):
         return self.image.name
 
+class ConsultationCategory(models.Model):
+    name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name
+
+
+
 class Drug(models.Model):
     name = models.CharField(max_length=100)
-    category = models.ForeignKey(ConsultationCategory, related_name='Drug', on_delete=models.CASCADE, null=True)
-    images = models.ManyToManyField(Image)
+    category = models.ForeignKey('ConsultationCategory', related_name='drugs', on_delete=models.CASCADE, null=True)
+    images = models.ManyToManyField('Image')
     description = CKEditor5Field('Text', config_name='extends')
     price = models.DecimalField(max_digits=10, decimal_places=2)
     quantity_available = models.PositiveIntegerField(default=0)
 
     def __str__(self):
         return f"{self.name} - {self.quantity_available} in stock"
+
+    @property
+    def category_name(self):
+        return self.category.name if self.category else ''
+
+    @property
+    def image_urls(self):
+        return [image.image.url for image in self.images.all()]
+
+
+
+
 
 class Prescription(models.Model):
     patient = models.ForeignKey(PatientProfile, on_delete=models.CASCADE)

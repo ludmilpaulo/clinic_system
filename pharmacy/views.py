@@ -154,3 +154,16 @@ def category_list(request):
     categories = ConsultationCategory.objects.all()
     serializer = ConsultationCategorySerializer(categories, many=True)
     return Response(serializer.data)
+
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def search_drugs(request):
+    query = request.GET.get('query', '')
+    if query:
+        drugs = Drug.objects.filter(name__icontains=query)
+        serializer = DrugSerializer(drugs, many=True, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_200_OK)
+    else:
+        return Response({"error": "No query parameter provided."}, status=status.HTTP_400_BAD_REQUEST)

@@ -9,7 +9,8 @@ from .views import (
     download_medical_record,
     download_prescription,
     drug_detail,
-    drug_list
+    drug_list,
+    search_drugs
 )
 
 urlpatterns = [
@@ -22,6 +23,7 @@ urlpatterns = [
     path('download-prescription/<int:pk>/', download_prescription, name='download-prescription'),
     #############################################################################################
     path('pharmacy/drugs/', drug_list, name='drug-list'),
+    path('search/', search_drugs, name='search_drugs'),
     path('pharmacy/detail/<int:pk>/', drug_detail, name='drug-detail'),
     path('pharmacy/categories/', category_list, name='category-list'),
 ]

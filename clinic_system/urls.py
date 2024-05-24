@@ -10,6 +10,7 @@ urlpatterns = [
     path('appointment/', include('appointments.urls')),
     path('manager/', include('management.urls')),
     path('pharmacy/', include('pharmacy.urls')),
+    path('order/', include('orders.urls')),
     path("ckeditor5/", include('django_ckeditor_5.urls'), name="ck_editor_5_upload_file"),
 ]
 
