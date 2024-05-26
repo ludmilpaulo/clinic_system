@@ -1,6 +1,7 @@
 
 from datetime import datetime, timedelta
 from django.db.models import Sum, Count
+from orders.models import Order
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from rest_framework import status

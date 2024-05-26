@@ -1,3 +1,4 @@
+# signals.py
 from datetime import datetime
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
@@ -14,16 +15,27 @@ def track_order_status_change(sender, instance, **kwargs):
 @receiver(post_save, sender=Order)
 def order_status_changed(sender, instance, **kwargs):
     if hasattr(instance, '_previous_status') and instance._previous_status != instance.status:
-        context = {
-            'username': instance.user.username,
-            'order_id': instance.id,
-            'status': instance.status,
-            'total_price': instance.total_price,
-            'year': datetime.now().year
-        }
+        message = f"""
+        <html>
+        <body>
+            <p>Dear {instance.user.username},</p>
+            <p>We would like to inform you that the status of your order (Order ID: <strong>{instance.id}</strong>) has been updated to <strong>{instance.status}</strong>.</p>
+            <p><strong>Order Details:</strong></p>
+            <ul>
+                <li>Total Price: <strong>R{instance.total_price}</strong></li>
+                <li>Current Status: <strong>{instance.status}</strong></li>
+            </ul>
+            <p>If you have any questions or need further assistance, please do not hesitate to contact us.</p>
+            <p>Thank you for shopping with us.</p>
+            <p>Best regards,</p>
+            <p><strong>Men's Clinic</strong></p>
+            <p>{datetime.now().year}</p>
+        </body>
+        </html>
+        """
+
         send_order_email(
             subject='Order Status Update',
-            template_name='order_status_update_email.html',  # Path to your email template
-            context=context,
+            message=message,
             recipient_list=[instance.user.email]
         )

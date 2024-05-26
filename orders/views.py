@@ -4,6 +4,7 @@ from accounts.models import ConsultationCategory
 from accounts.serializers import ConsultationCategorySerializer
 from pharmacy.models import Drug, Image
 from datetime import datetime
+from rest_framework.decorators import action
 from django.contrib.auth.models import User
 from pharmacy.models import Drug
 from pharmacy.serializers import DrugSerializer, ImageSerializer
@@ -18,6 +19,7 @@ from .utils import send_order_email, generate_order_pdf
 from rest_framework.authtoken.models import Token
 from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt
+from twilio.rest import Client
 
 
 @csrf_exempt
@@ -310,21 +312,31 @@ class ConsultationCategoryViewSet(viewsets.ModelViewSet):
 class ImageViewSet(viewsets.ModelViewSet):
     queryset = Image.objects.all()
     serializer_class = ImageSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
     
-    
+
 class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+    @action(detail=True, methods=['patch'], url_path='update-status')
+    def update_status(self, request, pk=None):
+        order = self.get_object()
+        status = request.data.get('status')
+        if status not in dict(Order.STATUS_CHOICES):
+            return Response({"detail": "Invalid status."}, status=status.HTTP_400_BAD_REQUEST)
+        order.status = status
+        order.save()
+        return Response(OrderSerializer(order).data)
+
 class OrderItemViewSet(viewsets.ModelViewSet):
     queryset = OrderItem.objects.all()
     serializer_class = OrderItemSerializer
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AllowAny]
 
 
 from datetime import datetime, timedelta
@@ -334,8 +346,10 @@ from rest_framework.response import Response
 from rest_framework import status
 
 # Existing imports...
+from .models import Order  # Ensure the correct import path for your Order model
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def sales_summary(request):
     try:
         today = datetime.today()
@@ -356,6 +370,7 @@ def sales_summary(request):
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def user_statistics(request):
     try:
         most_purchases_user = Order.objects.values('user__username').annotate(total_spent=Sum('total_price')).order_by('-total_spent').first()
@@ -370,6 +385,7 @@ def user_statistics(request):
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])
+@permission_classes([AllowAny])
 def location_statistics(request):
     try:
         location_stats = Order.objects.values('country').annotate(total_sales=Sum('total_price')).order_by('-total_sales')

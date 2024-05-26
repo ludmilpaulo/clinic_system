@@ -32,17 +32,18 @@ def generate_order_pdf(order):
     buffer.seek(0)
     return buffer.getvalue()
 
+# utils.py
+from django.core.mail import EmailMultiAlternatives
 
-
-
-def send_order_email(subject, html_content, recipient_list, attachments=None):
-    plain_message = strip_tags(html_content)
-    from_email = settings.DEFAULT_FROM_EMAIL
-    email = EmailMultiAlternatives(subject, plain_message, from_email, recipient_list)
-    email.attach_alternative(html_content, "text/html")
-
-    if attachments:
-        for attachment in attachments:
-            email.attach(attachment['filename'], attachment['content'], attachment['mime_type'])
-
+def send_order_email(subject, message, recipient_list):
+    email = EmailMultiAlternatives(
+        subject=subject,
+        body=message,
+       from_email = settings.DEFAULT_FROM_EMAIL,  # Replace with your email or a configured email address
+        to=recipient_list
+    )
+    email.attach_alternative(message, "text/html")
     email.send()
+
+
+
