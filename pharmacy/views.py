@@ -1,6 +1,7 @@
 from accounts.models import ConsultationCategory
 from accounts.serializers import ConsultationCategorySerializer
 from appointments.models import Appointment, MedicalRecord
+import logging
 from django.utils.dateparse import parse_datetime
 from orders.models import Order
 from rest_framework import viewsets
@@ -16,6 +17,11 @@ from .serializers import AppointmentSerializer, CartSerializer, OrderSerializer,
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from io import BytesIO
+import logging
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework import status
 
 class AppointmentListView(generics.ListCreateAPIView):
     serializer_class = AppointmentSerializer
@@ -110,20 +116,28 @@ class RevenueViewSet(viewsets.ModelViewSet):
 
 
 
-@api_view(['GET', 'POST'])
+
+logger = logging.getLogger(__name__)
+
+@api_view(['GET'])
 @permission_classes([AllowAny])
 def drug_list(request):
-    if request.method == 'GET':
-        drugs = Drug.objects.all()
-        serializer = DrugSerializer(drugs, many=True, context={'request': request})
-        return Response(serializer.data)
+    logger.debug("GET request received")
+    drugs = Drug.objects.all()
+    serializer = DrugSerializer(drugs, many=True, context={'request': request})
+    return Response(serializer.data)
 
-    elif request.method == 'POST':
-        serializer = DrugSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def create_drug(request):
+    logger.debug("POST request received")
+    logger.debug("POST data: %s", request.data)
+    serializer = DrugSerializer(data=request.data)
+    if serializer.is_valid():
+        serializer.save()
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 @api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([AllowAny])

@@ -1,9 +1,48 @@
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.utils.html import strip_tags
+from django.conf import settings
+from django.core.mail import EmailMessage
+from django.core.mail import EmailMultiAlternatives
 
-def send_order_email(subject, template_name, context, recipient_list):
-    html_message = render_to_string(template_name, context)
-    plain_message = strip_tags(html_message)
-    from_email = 'your-email@example.com'
-    send_mail(subject, plain_message, from_email, recipient_list, html_message=html_message)
+
+# utils.py
+
+from reportlab.lib.pagesizes import letter
+from reportlab.pdfgen import canvas
+import io
+
+def generate_order_pdf(order):
+    buffer = io.BytesIO()
+    p = canvas.Canvas(buffer, pagesize=letter)
+    p.drawString(100, 750, f"Order Confirmation for Order #{order.id}")
+    p.drawString(100, 730, f"Total Price: {order.total_price} Kz")
+    p.drawString(100, 710, f"Address: {order.address}, {order.city}, {order.postal_code}, {order.country}")
+    p.drawString(100, 690, f"Payment Method: {order.payment_method}")
+
+    p.drawString(100, 650, "Order Items:")
+    height = 630
+    for item in order.items.all():
+        p.drawString(100, height, f"{item.quantity} x {item.drug.name} at {item.price} Kz each")
+        height -= 20
+
+    p.showPage()
+    p.save()
+
+    buffer.seek(0)
+    return buffer.getvalue()
+
+
+
+
+def send_order_email(subject, html_content, recipient_list, attachments=None):
+    plain_message = strip_tags(html_content)
+    from_email = settings.DEFAULT_FROM_EMAIL
+    email = EmailMultiAlternatives(subject, plain_message, from_email, recipient_list)
+    email.attach_alternative(html_content, "text/html")
+
+    if attachments:
+        for attachment in attachments:
+            email.attach(attachment['filename'], attachment['content'], attachment['mime_type'])
+
+    email.send()

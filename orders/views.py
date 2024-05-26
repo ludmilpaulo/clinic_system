@@ -1,26 +1,74 @@
-# views.py
-
 from datetime import datetime
+from django.contrib.auth.models import User
 from accounts.models import ConsultationCategory
 from accounts.serializers import ConsultationCategorySerializer
 from pharmacy.models import Drug, Image
+from datetime import datetime
+from django.contrib.auth.models import User
+from pharmacy.models import Drug
 from pharmacy.serializers import DrugSerializer, ImageSerializer
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .models import  Order, OrderItem
+from rest_framework.permissions import AllowAny
+from rest_framework.decorators import permission_classes
+from .models import Order, OrderItem
 from .serializers import OrderItemSerializer, OrderSerializer
-from django.contrib.auth.models import User
+from .utils import send_order_email, generate_order_pdf
+from rest_framework.authtoken.models import Token
 from django.db import transaction
-from .utils import send_order_email
+from django.views.decorators.csrf import csrf_exempt
 
+
+@csrf_exempt
 @api_view(['POST'])
+@permission_classes([AllowAny])
 def checkout(request):
-    user = request.user
     data = request.data
+    print("Request data:", data)
+
+    token_key = data.get('token', None)
+    print("Token key:", token_key)
+    user = None
+    new_user = False
+
+    if token_key:
+        try:
+            token = Token.objects.get(key=token_key)
+            user = token.user
+            print("User retrieved from token:", user)
+        except Token.DoesNotExist:
+            print("Token does not exist.")
+
+    if not user:
+        user_id = data.get('user_id', None)
+        print("User ID:", user_id)
+        if user_id:
+            try:
+                user = User.objects.get(id=user_id)
+                print("User retrieved from user_id:", user)
+            except User.DoesNotExist:
+                print("User does not exist for user_id:", user_id)
+
+    if not user:
+        # If user does not exist, create a new user
+        name = data.get('name', 'user')
+        email = data.get('email', f'{name}@example.com')
+        password = data.get('password', email)  # Using email as password
+        username = f'{name[0]}{User.objects.count() + 1}'  # Create a unique username using the first letter of the name
+        print("Creating new user with username:", username)
+        user = User.objects.create_user(username=username, email=email, password=password)
+        new_user = True
+        print("New user created:", user)
+
+        # Optionally create a token for the new user
+        token = Token.objects.create(user=user)
+        token_key = token.key
+        print("Token created for new user:", token_key)
 
     try:
         with transaction.atomic():
+            print("Creating Order object...")
             order = Order.objects.create(
                 user=user,
                 total_price=data['total_price'],
@@ -30,11 +78,13 @@ def checkout(request):
                 country=data['country'],
                 payment_method=data['payment_method']
             )
+            print("Order object created:", order)
 
             for item in data['items']:
                 drug = Drug.objects.get(id=item['id'])
                 if drug.quantity_available < item['quantity']:
                     raise ValueError(f"Not enough stock for {drug.name}")
+                print("Creating OrderItem object for drug:", drug)
 
                 OrderItem.objects.create(
                     order=order,
@@ -42,9 +92,19 @@ def checkout(request):
                     quantity=item['quantity'],
                     price=drug.price
                 )
+                print("OrderItem object created for drug:", drug.name)
                 # Reduce drug quantity
                 drug.quantity_available -= item['quantity']
                 drug.save()
+                print("Drug quantity updated for:", drug.name)
+
+            # Generate PDF
+            pdf_content = generate_order_pdf(order)
+            pdf_attachment = {
+                'filename': f'order_{order.id}.pdf',
+                'content': pdf_content,
+                'mime_type': 'application/pdf',
+            }
 
             # Send order confirmation email
             order_confirmation_email = f"""
@@ -108,17 +168,85 @@ def checkout(request):
             </body>
             </html>
             """
+            attachments = [pdf_attachment]
+
+            if new_user:
+                account_details_email = f"""
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>Account Details</title>
+                    <style>
+                        body {{
+                            font-family: Arial, sans-serif;
+                            background-color: #f4f4f4;
+                            color: #333;
+                            margin: 0;
+                            padding: 0;
+                        }}
+                        .container {{
+                            width: 80%;
+                            max-width: 600px;
+                            margin: 20px auto;
+                            background-color: #fff;
+                            padding: 20px;
+                            border-radius: 10px;
+                            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                        }}
+                        h1 {{
+                            color: #007BFF;
+                        }}
+                        p {{
+                            line-height: 1.6;
+                        }}
+                        .footer {{
+                            margin-top: 20px;
+                            padding-top: 20px;
+                            border-top: 1px solid #ddd;
+                            text-align: center;
+                            color: #777;
+                        }}
+                    </style>
+                </head>
+                <body>
+                    <div class="container">
+                        <h1>Welcome, {user.username}!</h1>
+                        <p>An account has been created for you with the following details:</p>
+                        <p><strong>Username:</strong> {user.username}</p>
+                        <p><strong>Email:</strong> {user.email}</p>
+                        <p><strong>Password:</strong> {user.email}</p>
+                        <p>Please feel free to log in and change your password and other details in your profile.</p>
+                        <div class="footer">
+                            <p>&copy; {datetime.now().year} Men's clinis. All rights reserved.</p>
+                        </div>
+                    </div>
+                </body>
+                </html>
+                """
+                send_order_email(
+                    subject='Your New Account Details',
+                    html_content=account_details_email,
+                    recipient_list=[user.email],
+                    attachments=attachments
+                )
+                print("Account details email sent to:", user.email)
+
             send_order_email(
                 subject='Order Confirmation',
                 html_content=order_confirmation_email,
-                recipient_list=[user.email]
+                recipient_list=[user.email],
+                attachments=attachments
             )
+            print("Order confirmation email sent to:", user.email)
 
             serializer = OrderSerializer(order)
+            print("Order serialized successfully.")
             return Response(serializer.data, status=status.HTTP_201_CREATED)
     except ValueError as ve:
+        print("ValueError:", ve)
         return Response({'detail': str(ve)}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
+        print("Exception:", e)
         return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 

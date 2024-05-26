@@ -1,10 +1,10 @@
-# orders/models.py
-
 from django.db import models
 from django.contrib.auth.models import User
 from pharmacy.models import Drug
 
-class Order(models.Model):
+from dirtyfields import DirtyFieldsMixin
+
+class Order(DirtyFieldsMixin, models.Model):
     PAYMENT_METHOD_CHOICES = [
         ('card', 'Credit Card'),
         ('delivery', 'On Delivery'),

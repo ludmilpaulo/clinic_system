@@ -33,8 +33,7 @@ class AboutUs(models.Model):
     address = models.CharField(max_length=100, blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
     email = models.EmailField(max_length=255, blank=True, null=True)
-    # Social Network
-    github = models.URLField(blank=True, null=True)
+   
     linkedin = models.URLField(blank=True, null=True)
     facebook = models.URLField(blank=True, null=True)
     twitter = models.URLField(blank=True, null=True)
