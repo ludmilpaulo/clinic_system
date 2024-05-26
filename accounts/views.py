@@ -1,210 +1,161 @@
-from rest_framework.permissions import AllowAny
-from django.contrib.auth import authenticate, login
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.response import Response
 from django.contrib.auth.models import User
-from django.http import JsonResponse
-from rest_framework.authtoken.models import Token
 from django.core.mail import send_mail
+from django.utils.crypto import get_random_string
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
 from django.conf import settings
-from .models import ConsultationCategory, DoctorProfile, PatientProfile, Document
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from rest_framework.permissions import AllowAny
+from rest_framework.decorators import permission_classes
+from rest_framework.authtoken.models import Token
+from django.urls import reverse
 
-
-
-from rest_framework import generics, permissions
-
-from .serializers import ConsultationCategorySerializer, DoctorProfileSerializer
-import logging
-import json
-from rest_framework import generics, permissions
-
-from .serializers import DoctorProfileSerializer
-
-
-from django.http import Http404
-
-
-
-logger = logging.getLogger(__name__)
-
-class DoctorProfileDetail(generics.RetrieveUpdateAPIView):
-    queryset = DoctorProfile.objects.all()
-    serializer_class = DoctorProfileSerializer
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get_object(self):
-        user_id = self.kwargs['doctor_id']
-        logger.info(f"Retrieving DoctorProfile for user ID: {user_id}")
-        try:
-            return DoctorProfile.objects.get(user_id=user_id)
-        except DoctorProfile.DoesNotExist:
-            logger.error(f"DoctorProfile for user ID {user_id} does not exist.")
-            raise Http404("DoctorProfile does not exist")
-
-    def update(self, request, *args, **kwargs):
-        logger.info(f"Received data: {json.dumps(request.data, indent=4)}")
-        try:
-            return super().update(request, *args, **kwargs)
-        except Exception as e:
-            logger.error(f"Error updating DoctorProfile: {e}")
-            raise
-
-
-
-@api_view(['POST'])
 @permission_classes([AllowAny])
-def custom_signup(request, format=None):
-    print("Received data:", request.data)
-    if request.method == 'POST':
-        try:
-            username = request.data.get("username")
-            email = request.data.get("email")
-            password = request.data.get("password")
-            user_type = request.data.get("user_type")
+class UserSignupView(APIView):
+    def post(self, request):
+        username = request.data.get('username')
+        email = request.data.get('email')
+        password = request.data.get('password')
+        
+        if not username or not email or not password:
+            return Response({'error': 'All fields are required.'}, status=status.HTTP_400_BAD_REQUEST)
 
-            #name = request.data.get("name")
-            name = username
-            surname = request.data.get("surname")
-            phone_number = request.data.get("phone_number")
-            id_number_or_passport = request.data.get("id_number_or_passport")
-            gender = request.data.get("gender")
-            date_of_birth = request.data.get("date_of_birth")
-            address = request.data.get("address")
+        if User.objects.filter(username=username).exists():
+            return Response({'error': 'Username already exists.'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        if User.objects.filter(email=email).exists():
+            return Response({'error': 'Email already exists.'}, status=status.HTTP_400_BAD_REQUEST)
 
-            print("Validating inputs...")
-            if not username or not email or not password or not user_type:
-                print("Validation error: Missing fields")
-                return JsonResponse({"error": "All fields are required"}, status=400)
+        user = User.objects.create_user(username=username, email=email, password=password)
+        token, created = Token.objects.get_or_create(user=user)
 
-            if not name or not surname or not phone_number or not id_number_or_passport or not gender or not date_of_birth or not address:
-                print("Validation error: Missing profile fields")
-                return JsonResponse({"error": "All profile fields are required"}, status=400)
+        return Response({
+            'token': token.key,
+            'user_id': user.id,
+            'username': user.username,
+            'is_staff': user.is_staff,
+            'is_superuser': user.is_superuser
+        }, status=status.HTTP_201_CREATED)
 
-            print("Checking for existing username and email...")
-            if User.objects.filter(username=username).exists():
-                print("Validation error: Username exists")
-                return JsonResponse({"error": "Username already exists"}, status=400)
-            if User.objects.filter(email=email).exists():
-                print("Validation error: Email registered")
-                return JsonResponse({"error": "Email already registered"}, status=400)
-
-            print("Creating user...")
-            user = User.objects.create_user(username=username, email=email, password=password)
-            user.save()
-
-            if user_type == 'doctor':
-                specialty = request.data.get("specialty")
-                years_of_experience = request.data.get("years_of_experience")
-
-
-                if not specialty or not years_of_experience:
-                    print("Validation error: Missing doctor fields")
-                    return JsonResponse({"error": "All doctor fields are required"}, status=400)
-
-
-                print("Creating doctor profile...")
-                doctor_profile = DoctorProfile.objects.create(
-                    user=user,
-                    name=name,
-                    surname=surname,
-                    phone_number=phone_number,
-                    id_number_or_passport=id_number_or_passport,
-                    gender=gender,
-                    date_of_birth=date_of_birth,
-                    address=address,
-                    specialty=specialty,
-                    years_of_experience=years_of_experience
-
-                )
-
-                print("Handling document uploads...")
-                documents = request.FILES.getlist('documents')
-                for document in documents:
-                    Document.objects.create(user=user, document=document)
-
-                print("Sending welcome email to doctor...")
-                send_mail(
-                    subject='Welcome to the Clinic Platform',
-                    message=(
-                        'Dear Doctor, welcome to our platform. Your account will be activated in 78 hours pending background checks. '
-                        'If you have any other supporting documents, please respond to this email with the attached documents.'
-                    ),
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[email],
-                    fail_silently=False,
-                )
-
-            else:
-                print("Creating patient profile...")
-                PatientProfile.objects.create(
-                    user=user,
-                    name=name,
-                    surname=surname,
-                    phone_number=phone_number,
-                    id_number_or_passport=id_number_or_passport,
-                    gender=gender,
-                    date_of_birth=date_of_birth,
-                    address=address
-                )
-
-                print("Sending welcome email to patient...")
-                send_mail(
-                    subject='Welcome to the Clinic Platform',
-                    message='Dear Patient, welcome to our platform.',
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[email],
-                    fail_silently=False,
-                )
-
-            print("Creating token...")
-            token, _ = Token.objects.get_or_create(user=user)
-
-            print("Signup successful")
-            return JsonResponse({
-                "message": "Signup successful",
-                "token": token.key,
-                "user_id": user.pk,
-                "username": user.username,
-                "status": 201
-            }, status=201)
-
-        except Exception as e:
-            print("Unexpected error:", str(e))
-            return JsonResponse({"error": str(e)}, status=400)
-
-    return JsonResponse({"error": "Method not allowed"}, status=405)
-
-
-
-@api_view(['POST'])
 @permission_classes([AllowAny])
-def custom_login(request, format=None):
-    print("Received data:", request.data)
-    if request.method == 'POST':
-    
+class UserLoginView(APIView):
+    def post(self, request):
+        username = request.data.get('username')
+        password = request.data.get('password')
+        
+        user = authenticate(username=username, password=password)
+        if user is not None:
+            token, created = Token.objects.get_or_create(user=user)
+            return Response({
+                'token': token.key,
+                'user_id': user.id,
+                'username': user.username,
+                'is_staff': user.is_staff,
+                'is_superuser': user.is_superuser
+            }, status=status.HTTP_200_OK)
+        else:
+            return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
+
+@permission_classes([AllowAny])
+class PasswordResetView(APIView):
+    def post(self, request):
+        email = request.data.get('email')
         try:
-            username_or_email = request.data.get("username")
-            password = request.data.get("password")
-            user = authenticate(request, username=username_or_email, password=password)
-            if user is not None:
-                token, created = Token.objects.get_or_create(user=user)
-                login(request, user)
-                return JsonResponse({"message": "Login successful",
-                                     'token':token.key,
-                                        'user_id':user.pk,
-                                        'username':user.username,
-                                        "status": 201
-                                     }, status=200)
-            else:
-                return JsonResponse({"error": "Invalid credentials"}, status=400)
-        except json.JSONDecodeError:
-            return JsonResponse({"error": "Invalid JSON"}, status=400)
-    return JsonResponse({"error": "Method not allowed"}, status=405)
+            user = User.objects.get(email=email)
+            token = default_token_generator.make_token(user)
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            reset_url = f'{settings.FRONTEND_URL}/ResetPassword?uid={uid}&token={token}'
+            subject = 'Password Reset Request'
+            message = f"""
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Password Reset Request</title>
+                <style>
+                    body {{
+                        font-family: Arial, sans-serif;
+                        background-color: #f7f7f7;
+                        color: #333;
+                        margin: 0;
+                        padding: 0;
+                    }}
+                    .container {{
+                        max-width: 600px;
+                        margin: 0 auto;
+                        padding: 20px;
+                        background-color: #ffffff;
+                        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                    }}
+                    .header {{
+                        background-color: #007bff;
+                        color: #ffffff;
+                        padding: 10px 0;
+                        text-align: center;
+                    }}
+                    .content {{
+                        padding: 20px;
+                    }}
+                    .button {{
+                        display: block;
+                        width: 200px;
+                        margin: 20px auto;
+                        padding: 10px;
+                        background-color: #007bff;
+                        color: #ffffff;
+                        text-align: center;
+                        text-decoration: none;
+                        border-radius: 5px;
+                    }}
+                    .footer {{
+                        text-align: center;
+                        padding: 10px 0;
+                        color: #999999;
+                    }}
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>Password Reset Request</h1>
+                    </div>
+                    <div class="content">
+                        <p>Hello {user.username},</p>
+                        <p>We received a request to reset your password. Click the button below to reset your password:</p>
+                        <a href="{reset_url}" class="button">Reset Password</a>
+                        <p>If you did not request a password reset, please ignore this email or contact support if you have questions.</p>
+                        <p>Thank you,</p>
+                        <p>Your Company Name</p>
+                    </div>
+                    <div class="footer">
+                        <p>&copy; 2024 Your Company Name. All rights reserved.</p>
+                    </div>
+                </div>
+            </body>
+            </html>
+            """
+            send_mail(subject, '', settings.DEFAULT_FROM_EMAIL, [user.email], html_message=message)
+            return Response({'detail': 'Password reset email sent.'}, status=status.HTTP_200_OK)
+        except User.DoesNotExist:
+            return Response({'error': 'User with this email does not exist.'}, status=status.HTTP_400_BAD_REQUEST)
 
-
-
-class ConsultationCategoryListCreate(generics.ListCreateAPIView):
-    queryset = ConsultationCategory.objects.all()
-    serializer_class = ConsultationCategorySerializer
-    permission_classes = [permissions.IsAuthenticated]
-
+@permission_classes([AllowAny])
+class PasswordResetConfirmView(APIView):
+    def post(self, request):
+        uid = request.data.get('uid')
+        token = request.data.get('token')
+        new_password = request.data.get('newPassword')
+        try:
+            uid = force_str(urlsafe_base64_decode(uid))
+            user = User.objects.get(pk=uid)
+            if default_token_generator.check_token(user, token):
+                user.set_password(new_password)
+                user.save()
+                return Response({'detail': 'Password has been reset.'}, status=status.HTTP_200_OK)
+            return Response({'error': 'Invalid token.'}, status=status.HTTP_400_BAD_REQUEST)
+        except (User.DoesNotExist, ValueError):
+            return Response({'error': 'Invalid user.'}, status=status.HTTP_400_BAD_REQUEST)

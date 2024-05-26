@@ -1,6 +1,7 @@
 from appointments.models import Appointment, MedicalRecord
+from orders.models import Order
 from rest_framework import serializers
-from .models import  Prescription, PrescriptionDrug, Drug, Cart, Order, Revenue
+from .models import  Image, Prescription, PrescriptionDrug, Drug, Cart, Revenue
 
 class AppointmentSerializer(serializers.ModelSerializer):
     patient_name = serializers.SerializerMethodField()
@@ -98,4 +99,11 @@ class OrderSerializer(serializers.ModelSerializer):
 class RevenueSerializer(serializers.ModelSerializer):
     class Meta:
         model = Revenue
+        fields = '__all__'
+
+
+class ImageSerializer(serializers.ModelSerializer):
+    
+    class Meta:
+        model = Image
         fields = '__all__'

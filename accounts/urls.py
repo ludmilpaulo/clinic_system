@@ -1,12 +1,9 @@
-from django.urls import path, include
-from accounts.views import ConsultationCategoryListCreate, DoctorProfileDetail, custom_login, custom_signup
-
-
-
+from django.urls import path
+from .views import PasswordResetView, PasswordResetConfirmView, UserSignupView, UserLoginView
 
 urlpatterns = [
-    path('custom-login/', custom_login, name='custom-login'),
-    path('custom-signup/', custom_signup, name='custom-signup'),
-    path('doctor-profile/<int:doctor_id>/', DoctorProfileDetail.as_view(), name='doctor-profile-detail'),
-    path('consultation-categories/', ConsultationCategoryListCreate.as_view(), name='consultation-category-list-create'),
+    path('password-reset/', PasswordResetView.as_view(), name='password_reset'),
+    path('password-reset/confirm/', PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
+    path('signup/', UserSignupView.as_view(), name='signup'),
+    path('login/', UserLoginView.as_view(), name='login'),
 ]

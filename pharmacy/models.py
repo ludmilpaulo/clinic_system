@@ -71,16 +71,7 @@ class CartItem(models.Model):
     drug = models.ForeignKey(Drug, on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField(default=1)
 
-class Order(models.Model):
-    user = models.ForeignKey('auth.User', on_delete=models.CASCADE)
-    drugs = models.ManyToManyField(Drug, through='OrderItem')
-    total_price = models.DecimalField(max_digits=10, decimal_places=2)
-    status = models.CharField(max_length=50, choices=[('pending', 'Pending'), ('completed', 'Completed')])
 
-class OrderItem(models.Model):
-    order = models.ForeignKey(Order, on_delete=models.CASCADE)
-    drug = models.ForeignKey(Drug, on_delete=models.CASCADE)
-    quantity = models.PositiveIntegerField()
 
 class Revenue(models.Model):
     date = models.DateField()

@@ -2,6 +2,7 @@ from accounts.models import ConsultationCategory
 from accounts.serializers import ConsultationCategorySerializer
 from appointments.models import Appointment, MedicalRecord
 from django.utils.dateparse import parse_datetime
+from orders.models import Order
 from rest_framework import viewsets
 from rest_framework import status
 from rest_framework.response import Response
@@ -10,7 +11,7 @@ from rest_framework.decorators import *
 from rest_framework.permissions import *
 from django.shortcuts import get_object_or_404
 from django.http import FileResponse
-from .models import Cart, Order, Prescription,  Drug, Revenue
+from .models import Cart, Prescription,  Drug, Revenue
 from .serializers import AppointmentSerializer, CartSerializer, OrderSerializer, PrescriptionSerializer, MedicalRecordSerializer, DrugSerializer, RevenueSerializer
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
