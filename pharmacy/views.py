@@ -1,4 +1,4 @@
-from accounts.models import ConsultationCategory
+from pharmacy.models import ConsultationCategory
 from accounts.serializers import ConsultationCategorySerializer
 from appointments.models import Appointment, MedicalRecord
 import logging
