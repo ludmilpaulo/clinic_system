@@ -1,17 +1,18 @@
-from django.contrib.auth.models import User
+from django.contrib.auth import authenticate, get_user_model
 from django.core.mail import send_mail
-from django.utils.crypto import get_random_string
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.contrib.auth.tokens import default_token_generator
+from accounts.serializers import UserSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from django.conf import settings
-from django.contrib.auth.tokens import default_token_generator
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.utils.encoding import force_bytes, force_str
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.decorators import permission_classes
 from rest_framework.authtoken.models import Token
-from django.urls import reverse
+from django.conf import settings
+
+User = get_user_model()
 
 @permission_classes([AllowAny])
 class UserSignupView(APIView):
@@ -46,7 +47,15 @@ class UserLoginView(APIView):
         username = request.data.get('username')
         password = request.data.get('password')
         
-        user = authenticate(username=username, password=password)
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            try:
+                user = User.objects.get(email=username)
+            except User.DoesNotExist:
+                return Response({'error': 'Username or email does not exist'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = authenticate(username=user.username, password=password)
         if user is not None:
             token, created = Token.objects.get_or_create(user=user)
             return Response({
@@ -57,7 +66,7 @@ class UserLoginView(APIView):
                 'is_superuser': user.is_superuser
             }, status=status.HTTP_200_OK)
         else:
-            return Response({'error': 'Invalid credentials'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Invalid password'}, status=status.HTTP_400_BAD_REQUEST)
 
 @permission_classes([AllowAny])
 class PasswordResetView(APIView):
@@ -159,3 +168,9 @@ class PasswordResetConfirmView(APIView):
             return Response({'error': 'Invalid token.'}, status=status.HTTP_400_BAD_REQUEST)
         except (User.DoesNotExist, ValueError):
             return Response({'error': 'Invalid user.'}, status=status.HTTP_400_BAD_REQUEST)
+class UserProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data)
