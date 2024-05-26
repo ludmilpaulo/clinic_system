@@ -14,9 +14,9 @@ SECRET_KEY = 'django-insecure-df6ft!hc__ki2aga#ilxuir_ta3ku0-1x1-_h1&131vib_ll27
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
 
-FRONTEND_URL = 'http://localhost:3000' 
+FRONTEND_URL = 'https://www.trustmenclinic.com'
 # Application definition
 
 INSTALLED_APPS = [
@@ -71,7 +71,7 @@ CORS_ORIGIN_ALLOW_ALL = False
 
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000',  # Frontend URL for development
-    'https://your-frontend-domain.com',  # Frontend URL for production
+    FRONTEND_URL,  # Frontend URL for production
 ]
 
 CORS_ALLOW_METHODS = [
