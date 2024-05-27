@@ -1,5 +1,6 @@
 from django.core.mail import send_mail
 from django.contrib.auth.models import User
+from orders.models import Order, OrderItem
 from rest_framework import serializers
 from .models import PatientProfile, DoctorProfile, Document, ConsultationCategory
 
@@ -116,3 +117,21 @@ class ConsultationCategorySerializer(serializers.ModelSerializer):
     class Meta:
         model = ConsultationCategory
         fields = ['id', 'name']
+
+
+###############################################################
+
+
+class OrderItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = OrderItem
+        fields = ['id', 'order', 'drug', 'quantity', 'price']
+
+class OrderSerializer(serializers.ModelSerializer):
+    items = OrderItemSerializer(many=True, read_only=True)
+    user = serializers.ReadOnlyField(source='user.username')
+
+    class Meta:
+        model = Order
+        fields = '__all__'
+        read_only_fields = ('user', 'created_at', 'updated_at')

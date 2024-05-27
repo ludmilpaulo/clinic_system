@@ -1,19 +1,36 @@
 from rest_framework import serializers
-from .models import AboutUs, Contact, Why_Choose_Us, Testimonial
+from .models import Image, Carousel, AboutUs, Why_Choose_Us, Team, Contact
+
+
+class ImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Image
+        fields = ['image']
+
+
+class CarouselSerializer(serializers.ModelSerializer):
+    image = ImageSerializer(many=True)
+
+    class Meta:
+        model = Carousel
+        fields = ['id', 'image', 'title', 'sub_title']
+
 
 class AboutUsSerializer(serializers.ModelSerializer):
     class Meta:
         model = AboutUs
         fields = '__all__'
 
+
 class WhyChooseUsSerializer(serializers.ModelSerializer):
     class Meta:
         model = Why_Choose_Us
         fields = '__all__'
 
-class TestimonialSerializer(serializers.ModelSerializer):
+
+class TeamSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Testimonial
+        model = Team
         fields = '__all__'
 
 

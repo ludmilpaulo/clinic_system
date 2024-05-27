@@ -1,33 +1,54 @@
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny
-from rest_framework.response import Response
-from rest_framework import status
-from .models import AboutUs, Why_Choose_Us, Testimonial
-from .serializers import AboutUsSerializer, ContactSerializer, WhyChooseUsSerializer, TestimonialSerializer
+from rest_framework import generics
+from .models import Image, Carousel, AboutUs, Why_Choose_Us, Team, Contact
+from .serializers import ImageSerializer, CarouselSerializer, AboutUsSerializer, WhyChooseUsSerializer, TeamSerializer, ContactSerializer
 
-@api_view(['GET'])
-@permission_classes([AllowAny])
-def about_us(request):
-    about = AboutUs.objects.first()
-    why_choose_us = Why_Choose_Us.objects.all()
-    testimonials = Testimonial.objects.all()
+# ListCreateAPIView for creating and listing all instances
+class ImageListCreateAPIView(generics.ListCreateAPIView):
+    queryset = Image.objects.all()
+    serializer_class = ImageSerializer
 
-    about_serializer = AboutUsSerializer(about, context={'request': request})
-    why_choose_us_serializer = WhyChooseUsSerializer(why_choose_us, many=True)
-    testimonial_serializer = TestimonialSerializer(testimonials, many=True)
+class CarouselListCreateAPIView(generics.ListCreateAPIView):
+    queryset = Carousel.objects.all()
+    serializer_class = CarouselSerializer
 
-    return Response({
-        'about': about_serializer.data,
-        'why_choose_us': why_choose_us_serializer.data,
-        'testimonials': testimonial_serializer.data,
-    })
+class AboutUsListCreateAPIView(generics.ListCreateAPIView):
+    queryset = AboutUs.objects.all()
+    serializer_class = AboutUsSerializer
 
-@api_view(['POST'])
-@permission_classes([AllowAny])
-def submit_contact(request):
-    if request.method == 'POST':
-        serializer = ContactSerializer(data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+class WhyChooseUsListCreateAPIView(generics.ListCreateAPIView):
+    queryset = Why_Choose_Us.objects.all()
+    serializer_class = WhyChooseUsSerializer
+
+class TeamListCreateAPIView(generics.ListCreateAPIView):
+    queryset = Team.objects.all()
+    serializer_class = TeamSerializer
+
+class ContactListCreateAPIView(generics.ListCreateAPIView):
+    queryset = Contact.objects.all()
+    serializer_class = ContactSerializer
+
+# RetrieveUpdateDestroyAPIView for retrieving, updating and deleting a single instance
+class ImageRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Image.objects.all()
+    serializer_class = ImageSerializer
+
+class CarouselRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Carousel.objects.all()
+    serializer_class = CarouselSerializer
+
+class AboutUsRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = AboutUs.objects.all()
+    serializer_class = AboutUsSerializer
+
+class WhyChooseUsRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Why_Choose_Us.objects.all()
+    serializer_class = WhyChooseUsSerializer
+
+class TeamRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Team.objects.all()
+    serializer_class = TeamSerializer
+
+class ContactRetrieveUpdateDestroyAPIView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Contact.objects.all()
+    serializer_class = ContactSerializer
+  

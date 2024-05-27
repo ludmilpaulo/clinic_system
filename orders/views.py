@@ -22,6 +22,7 @@ from django.views.decorators.csrf import csrf_exempt
 from twilio.rest import Client
 
 
+
 @csrf_exempt
 @api_view(['POST'])
 @permission_classes([AllowAny])
@@ -164,7 +165,7 @@ def checkout(request):
                     <p>If you have any questions, feel free to <a href="mailto:support@example.com">contact our support team</a>.</p>
                     <p>Thank you for shopping with us!</p>
                     <div class="footer">
-                        <p>&copy; {datetime.now().year} Men's clinis. All rights reserved.</p>
+                        <p>&copy; {datetime.now().year} Men's clinic. All rights reserved.</p>
                     </div>
                 </div>
             </body>
@@ -219,7 +220,7 @@ def checkout(request):
                         <p><strong>Password:</strong> {user.email}</p>
                         <p>Please feel free to log in and change your password and other details in your profile.</p>
                         <div class="footer">
-                            <p>&copy; {datetime.now().year} Men's clinis. All rights reserved.</p>
+                            <p>&copy; {datetime.now().year} Men's clinic. All rights reserved.</p>
                         </div>
                     </div>
                 </body>
@@ -227,7 +228,7 @@ def checkout(request):
                 """
                 send_order_email(
                     subject='Your New Account Details',
-                    html_content=account_details_email,
+                    message=account_details_email,
                     recipient_list=[user.email],
                     attachments=attachments
                 )
@@ -235,7 +236,7 @@ def checkout(request):
 
             send_order_email(
                 subject='Order Confirmation',
-                html_content=order_confirmation_email,
+                message=order_confirmation_email,
                 recipient_list=[user.email],
                 attachments=attachments
             )

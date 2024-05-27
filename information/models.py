@@ -1,7 +1,9 @@
 from django.db import models
+from django.contrib.auth import get_user_model
+
+
+User = get_user_model()
 from django.utils import timezone
-from django.urls import reverse
-import re
 
 from django_ckeditor_5.fields import CKEditor5Field
 
@@ -33,7 +35,8 @@ class AboutUs(models.Model):
     address = models.CharField(max_length=100, blank=True, null=True)
     phone = models.CharField(max_length=20, blank=True, null=True)
     email = models.EmailField(max_length=255, blank=True, null=True)
-   
+    # Social Network
+    github = models.URLField(blank=True, null=True)
     linkedin = models.URLField(blank=True, null=True)
     facebook = models.URLField(blank=True, null=True)
     twitter = models.URLField(blank=True, null=True)
@@ -60,13 +63,23 @@ class Why_Choose_Us(models.Model):
         return self.title
 
 
-class Testimonial(models.Model):
-    author = models.CharField(max_length=100)
-    content = models.TextField()
-    created_at = models.DateTimeField(auto_now_add=True)
+class Team(models.Model):
+    name = models.CharField(max_length=50)
+    title = models.CharField(max_length=50)
+    bio = models.CharField(max_length=500)
+    image = models.ImageField(upload_to='chef/')
+    github = models.URLField(blank=True, null=True)
+    linkedin = models.URLField(blank=True, null=True)
+    facebook = models.URLField(blank=True, null=True)
+    twitter = models.URLField(blank=True, null=True)
+    instagram = models.URLField(blank=True, null=True)
+
+    class Meta:
+        verbose_name = 'Squad'
+        verbose_name_plural = 'Squad'
 
     def __str__(self):
-        return self.author
+        return self.name
 
 
 
@@ -85,3 +98,12 @@ class Contact(models.Model):
 
     def __str__(self):
         return self.subject
+
+class Chat(models.Model):
+   # order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='chat_messages')
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
+    message = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.message
