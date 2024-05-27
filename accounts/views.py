@@ -15,6 +15,10 @@ from rest_framework import generics, permissions
 
 User = get_user_model()
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 @permission_classes([AllowAny])
 class UserSignupView(APIView):
     def post(self, request):
@@ -22,13 +26,18 @@ class UserSignupView(APIView):
         email = request.data.get('email')
         password = request.data.get('password')
         
+        logger.debug(f"Received data: username={username}, email={email}")
+
         if not username or not email or not password:
+            logger.error('Missing fields')
             return Response({'error': 'All fields are required.'}, status=status.HTTP_400_BAD_REQUEST)
 
         if User.objects.filter(username=username).exists():
+            logger.error('Username already exists')
             return Response({'error': 'Username already exists.'}, status=status.HTTP_400_BAD_REQUEST)
         
         if User.objects.filter(email=email).exists():
+            logger.error('Email already exists')
             return Response({'error': 'Email already exists.'}, status=status.HTTP_400_BAD_REQUEST)
 
         user = User.objects.create_user(username=username, email=email, password=password)
@@ -139,7 +148,7 @@ class PasswordResetView(APIView):
                         <a href="{reset_url}" class="button">Reset Password</a>
                         <p>If you did not request a password reset, please ignore this email or contact support if you have questions.</p>
                         <p>Thank you,</p>
-                        <p>Your Company Name</p>
+                        <p>Company Name</p>
                     </div>
                     <div class="footer">
                         <p>&copy; 2024 Your Company Name. All rights reserved.</p>
