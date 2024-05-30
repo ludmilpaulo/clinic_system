@@ -4,6 +4,7 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.contrib.auth.tokens import default_token_generator
 from accounts.serializers import OrderSerializer, UserSerializer
+from orders.models import Order
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -63,8 +64,9 @@ class UserLoginView(APIView):
             try:
                 user = User.objects.get(email=username)
             except User.DoesNotExist:
+                print("user don't exist")
                 return Response({'error': 'Username or email does not exist'}, status=status.HTTP_400_BAD_REQUEST)
-
+        
         user = authenticate(username=user.username, password=password)
         if user is not None:
             token, created = Token.objects.get_or_create(user=user)
@@ -76,7 +78,7 @@ class UserLoginView(APIView):
                 'is_superuser': user.is_superuser
             }, status=status.HTTP_200_OK)
         else:
-            return Response({'error': 'Invalid password'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'error': 'Incorrect password'}, status=status.HTTP_400_BAD_REQUEST)
 
 @permission_classes([AllowAny])
 class PasswordResetView(APIView):
@@ -151,7 +153,7 @@ class PasswordResetView(APIView):
                         <p>Company Name</p>
                     </div>
                     <div class="footer">
-                        <p>&copy; 2024 Your Company Name. All rights reserved.</p>
+                        <p>&copy; 2024 Mens's clinic. All rights reserved.</p>
                     </div>
                 </div>
             </body>
@@ -184,9 +186,9 @@ class UserProfileView(APIView):
     def get(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
-    
-    
-    
+
+
+
 class UserOrdersView(generics.ListAPIView):
     serializer_class = OrderSerializer
     permission_classes = [permissions.IsAuthenticated]

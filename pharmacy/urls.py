@@ -11,6 +11,7 @@ from .views import (
     download_prescription,
     drug_detail,
     drug_list,
+    list_categories,
     search_drugs
 )
 
@@ -21,6 +22,7 @@ urlpatterns = [
     path('pharmacy/prescriptions/', PrescriptionCreateView.as_view(), name='prescription-create'),
     path('drugs/', drug_list, name='drug-list'),
     path('drugs/create/', create_drug, name='create-drug'),
+    path('categories/', list_categories, name='list-categories'),
     path('download-medical-record/<int:pk>/', download_medical_record, name='download-medical-record'),
     path('download-prescription/<int:pk>/', download_prescription, name='download-prescription'),
     #############################################################################################

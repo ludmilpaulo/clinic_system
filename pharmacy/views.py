@@ -12,7 +12,7 @@ from rest_framework.decorators import *
 from rest_framework.permissions import *
 from django.shortcuts import get_object_or_404
 from django.http import FileResponse
-from .models import Cart, Prescription,  Drug, Revenue
+from .models import Cart, Image, Prescription,  Drug, Revenue
 from .serializers import AppointmentSerializer, CartSerializer, OrderSerializer, PrescriptionSerializer, MedicalRecordSerializer, DrugSerializer, RevenueSerializer
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
@@ -132,12 +132,29 @@ def drug_list(request):
 def create_drug(request):
     logger.debug("POST request received")
     logger.debug("POST data: %s", request.data)
-    serializer = DrugSerializer(data=request.data)
-    if serializer.is_valid():
-        serializer.save()
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    data = request.data.copy()
 
+    # Handle category
+    category_name = data.get('category')
+    category, created = ConsultationCategory.objects.get_or_create(name=category_name)
+    data['category'] = category.id
+
+    # Create drug serializer
+    serializer = DrugSerializer(data=data)
+
+    if serializer.is_valid():
+        drug = serializer.save()
+
+        # Handle images
+        images = request.FILES.getlist('images')
+        for image in images:
+            img = Image.objects.create(image=image)
+            drug.images.add(img)
+        drug.save()
+
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET', 'PUT', 'DELETE'])
 @permission_classes([AllowAny])
@@ -152,9 +169,24 @@ def drug_detail(request, pk):
         return Response(serializer.data)
 
     elif request.method == 'PUT':
-        serializer = DrugSerializer(drug, data=request.data, context={'request': request})
+        data = request.data.copy()
+        category_name = data.get('category')
+        category, created = ConsultationCategory.objects.get_or_create(name=category_name)
+        data['category'] = category.id
+
+        serializer = DrugSerializer(drug, data=data, context={'request': request})
         if serializer.is_valid():
-            serializer.save()
+            drug = serializer.save()
+
+            # Handle images
+            images = request.FILES.getlist('images')
+            if images:
+                drug.images.clear()  # Remove old images
+                for image in images:
+                    img = Image.objects.create(image=image)
+                    drug.images.add(img)
+                drug.save()
+
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -182,3 +214,11 @@ def search_drugs(request):
         return Response(serializer.data, status=status.HTTP_200_OK)
     else:
         return Response({"error": "No query parameter provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def list_categories(request):
+    categories = ConsultationCategory.objects.all()
+    serializer = ConsultationCategorySerializer(categories, many=True)
+    return Response(serializer.data)

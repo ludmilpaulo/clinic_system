@@ -1,7 +1,7 @@
 from appointments.models import Appointment, MedicalRecord
 from orders.models import Order
 from rest_framework import serializers
-from .models import  Image, Prescription, PrescriptionDrug, Drug, Cart, Revenue
+from .models import  ConsultationCategory, Image, Prescription, PrescriptionDrug, Drug, Cart, Revenue
 
 class AppointmentSerializer(serializers.ModelSerializer):
     patient_name = serializers.SerializerMethodField()
@@ -69,15 +69,14 @@ class MedicalRecordSerializer(serializers.ModelSerializer):
 
 
 
-
-
 class DrugSerializer(serializers.ModelSerializer):
     image_urls = serializers.SerializerMethodField()
     category_name = serializers.CharField(source='category.name', read_only=True)
+    category = serializers.PrimaryKeyRelatedField(queryset=ConsultationCategory.objects.all())
 
     class Meta:
         model = Drug
-        fields = ['id', 'name', 'description', 'price', 'quantity_available', 'image_urls', 'category_name']
+        fields = ['id', 'name', 'description', 'price', 'quantity_available', 'image_urls', 'category_name', 'category']
 
     def get_image_urls(self, obj):
         if obj.images.exists():
