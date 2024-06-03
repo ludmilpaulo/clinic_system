@@ -2,6 +2,8 @@
 from datetime import datetime
 from django.db.models.signals import post_save, pre_save
 from django.dispatch import receiver
+
+from orders.pdf import generate_order_pdf
 from .models import Order
 from .utils import send_order_email
 
@@ -39,3 +41,18 @@ def order_status_changed(sender, instance, **kwargs):
             message=message,
             recipient_list=[instance.user.email]
         )
+        
+        
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+@receiver(post_save, sender=Order)
+def update_order_invoice(sender, instance, **kwargs):
+    if 'status' in instance.get_dirty_fields():
+        # Regenerate the PDF
+        pdf_content = generate_order_pdf(instance)
+        pdf_path = f'media/invoices/order_{instance.id}.pdf'
+        with open(pdf_path, 'wb') as pdf_file:
+            pdf_file.write(pdf_content)
+        instance.invoice = pdf_path
+        instance.save(update_fields=['invoice'])

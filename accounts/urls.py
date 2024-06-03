@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import PasswordResetView, PasswordResetConfirmView, UserOrdersView, UserProfileView, UserSignupView, UserLoginView
+from .views import PasswordResetView, PasswordResetConfirmView, UserOrdersView, UserProfileView, UserSignupView, UserLoginView, get_user_profile, update_user_profile
 
 urlpatterns = [
     path('password-reset/', PasswordResetView.as_view(), name='password_reset'),
@@ -7,6 +7,8 @@ urlpatterns = [
     path('signup/', UserSignupView.as_view(), name='signup'),
     path('login/', UserLoginView.as_view(), name='login'),
     path('profile/', UserProfileView.as_view(), name='profile'),
-    path('user/', UserProfileView.as_view(), name='user-profile'),
-    path('user/orders/', UserOrdersView.as_view(), name='user-orders'),
+    path('account/user/<int:user_id>/', UserProfileView.as_view(), name='user-profile'),
+    path('account/profile/<int:user_id>/', get_user_profile, name='get-user-profile'),
+    path('account/update/<int:user_id>/', update_user_profile, name='update-user-profile'),
+    path('orders/user/<int:user_id>/', UserOrdersView.as_view(), name='user-orders'),
 ]

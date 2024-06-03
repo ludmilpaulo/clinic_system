@@ -1,7 +1,9 @@
+import os
 from datetime import datetime
 from django.contrib.auth.models import User
 from accounts.models import ConsultationCategory
 from accounts.serializers import ConsultationCategorySerializer
+from clinic_system.settings import MEDIA_ROOT
 from pharmacy.models import Drug, Image
 from datetime import datetime
 from rest_framework.decorators import action
@@ -19,8 +21,12 @@ from .utils import send_order_email, generate_order_pdf
 from rest_framework.authtoken.models import Token
 from django.db import transaction
 from django.views.decorators.csrf import csrf_exempt
-from twilio.rest import Client
 
+
+
+from django.core.mail import EmailMessage
+from django.template.loader import render_to_string
+from django.utils.timezone import now
 
 
 @csrf_exempt
@@ -54,20 +60,26 @@ def checkout(request):
                 print("User does not exist for user_id:", user_id)
 
     if not user:
-        # If user does not exist, create a new user
-        name = data.get('name', 'user')
-        email = data.get('email', f'{name}@example.com')
-        password = data.get('password', email)  # Using email as password
-        username = f'{name[0]}{User.objects.count() + 1}'  # Create a unique username using the first letter of the name
-        print("Creating new user with username:", username)
-        user = User.objects.create_user(username=username, email=email, password=password)
-        new_user = True
-        print("New user created:", user)
+        # Check if user with the email already exists
+        email = data.get('email')
+        try:
+            user = User.objects.get(email=email)
+            print("Existing user retrieved:", user)
+        except User.DoesNotExist:
+            # If user does not exist, create a new user
+            name = data.get('name', 'user')
+            email = data.get('email', f'{name}@example.com')
+            password = data.get('password', email)  # Using email as password
+            username = f'{name[0]}{User.objects.count() + 1}'  # Create a unique username using the first letter of the name
+            print("Creating new user with username:", username)
+            user = User.objects.create_user(username=username, email=email, password=password)
+            new_user = True
+            print("New user created:", user)
 
-        # Optionally create a token for the new user
-        token = Token.objects.create(user=user)
-        token_key = token.key
-        print("Token created for new user:", token_key)
+            # Optionally create a token for the new user
+            token = Token.objects.create(user=user)
+            token_key = token.key
+            print("Token created for new user:", token_key)
 
     try:
         with transaction.atomic():
@@ -101,131 +113,35 @@ def checkout(request):
                 drug.save()
                 print("Drug quantity updated for:", drug.name)
 
+            # Ensure media directory exists
+            os.makedirs(os.path.join(MEDIA_ROOT, 'invoices'), exist_ok=True)
+
             # Generate PDF
             pdf_content = generate_order_pdf(order)
-            pdf_attachment = {
+            pdf_path = f'{MEDIA_ROOT}/invoices/order_{order.id}.pdf'
+            with open(pdf_path, 'wb') as pdf_file:
+                pdf_file.write(pdf_content)
+            order.invoice = f'invoices/order_{order.id}.pdf'
+            order.save(update_fields=['invoice'])
+
+            # Render the order confirmation email template
+            order_confirmation_email = render_to_string('order_confirmation_email.html', {
+                'user': user,
+                'order': order,
+                'year': now().year
+            })
+
+            attachments = [{
                 'filename': f'order_{order.id}.pdf',
                 'content': pdf_content,
                 'mime_type': 'application/pdf',
-            }
-
-            # Send order confirmation email
-            order_confirmation_email = f"""
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>Order Confirmation</title>
-                <style>
-                    body {{
-                        font-family: Arial, sans-serif;
-                        background-color: #f4f4f4;
-                        color: #333;
-                        margin: 0;
-                        padding: 0;
-                    }}
-                    .container {{
-                        width: 80%;
-                        max-width: 600px;
-                        margin: 20px auto;
-                        background-color: #fff;
-                        padding: 20px;
-                        border-radius: 10px;
-                        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-                    }}
-                    h1 {{
-                        color: #007BFF;
-                    }}
-                    p {{
-                        line-height: 1.6;
-                    }}
-                    .order-details {{
-                        margin: 20px 0;
-                        padding: 10px;
-                        background-color: #f9f9f9;
-                        border-radius: 5px;
-                    }}
-                    .footer {{
-                        margin-top: 20px;
-                        padding-top: 20px;
-                        border-top: 1px solid #ddd;
-                        text-align: center;
-                        color: #777;
-                    }}
-                </style>
-            </head>
-            <body>
-                <div class="container">
-                    <h1>Thank you for your order, {user.username}!</h1>
-                    <p>Your order # {order.id} has been received and is being processed.</p>
-                    <div class="order-details">
-                        <h2>Order Details:</h2>
-                        <p><strong>Order ID:</strong> {order.id}</p>
-                        <p><strong>Total Price:</strong> {order.total_price} Kz</p>
-                    </div>
-                    <p>If you have any questions, feel free to <a href="mailto:support@example.com">contact our support team</a>.</p>
-                    <p>Thank you for shopping with us!</p>
-                    <div class="footer">
-                        <p>&copy; {datetime.now().year} Men's clinic. All rights reserved.</p>
-                    </div>
-                </div>
-            </body>
-            </html>
-            """
-            attachments = [pdf_attachment]
+            }]
 
             if new_user:
-                account_details_email = f"""
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Account Details</title>
-                    <style>
-                        body {{
-                            font-family: Arial, sans-serif;
-                            background-color: #f4f4f4;
-                            color: #333;
-                            margin: 0;
-                            padding: 0;
-                        }}
-                        .container {{
-                            width: 80%;
-                            max-width: 600px;
-                            margin: 20px auto;
-                            background-color: #fff;
-                            padding: 20px;
-                            border-radius: 10px;
-                            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-                        }}
-                        h1 {{
-                            color: #007BFF;
-                        }}
-                        p {{
-                            line-height: 1.6;
-                        }}
-                        .footer {{
-                            margin-top: 20px;
-                            padding-top: 20px;
-                            border-top: 1px solid #ddd;
-                            text-align: center;
-                            color: #777;
-                        }}
-                    </style>
-                </head>
-                <body>
-                    <div class="container">
-                        <h1>Welcome, {user.username}!</h1>
-                        <p>An account has been created for you with the following details:</p>
-                        <p><strong>Username:</strong> {user.username}</p>
-                        <p><strong>Email:</strong> {user.email}</p>
-                        <p><strong>Password:</strong> {user.email}</p>
-                        <p>Please feel free to log in and change your password and other details in your profile.</p>
-                        <div class="footer">
-                            <p>&copy; {datetime.now().year} Men's clinic. All rights reserved.</p>
-                        </div>
-                    </div>
-                </body>
-                </html>
-                """
+                account_details_email = render_to_string('account_details_email.html', {
+                    'user': user,
+                    'year': now().year
+                })
                 send_order_email(
                     subject='Your New Account Details',
                     message=account_details_email,
@@ -251,6 +167,19 @@ def checkout(request):
     except Exception as e:
         print("Exception:", e)
         return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+def send_order_email(subject, message, recipient_list, attachments=None):
+    email = EmailMessage(
+        subject,
+        message,
+        'no-reply@example.com',
+        recipient_list,
+    )
+    if attachments:
+        for attachment in attachments:
+            email.attach(attachment['filename'], attachment['content'], attachment['mime_type'])
+    email.content_subtype = 'html'  # This is necessary to send HTML email
+    email.send()
 
 
 from rest_framework import viewsets, status

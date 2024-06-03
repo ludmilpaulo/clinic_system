@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Order Confirmation</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            width: 80%;
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            color: #007BFF;
+        }
+        p {
+            line-height: 1.6;
+        }
+        .order-details {
+            margin: 20px 0;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+        }
+        .footer {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+            text-align: center;
+            color: #777;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Thank you for your order, {{ user.username }}!</h1>
+        <p>Your order # {{ order.id }} has been received and is being processed.</p>
+        <div class="order-details">
+            <h2>Order Details:</h2>
+            <p><strong>Order ID:</strong> {{ order.id }}</p>
+            <p><strong>Total Price:</strong> {{ order.total_price }} Kz</p>
+        </div>
+        <p>If you have any questions, feel free to <a href="mailto:support@example.com">contact our support team</a>.</p>
+        <p>Thank you for shopping with us!</p>
+        <div class="footer">
+            <p>&copy; {{ year }} Men's clinic. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

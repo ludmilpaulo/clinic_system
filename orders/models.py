@@ -29,6 +29,7 @@ class Order(DirtyFieldsMixin, models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     drugs = models.ManyToManyField(Drug, through='OrderItem', related_name='orders')
+    invoice = models.FileField(upload_to='invoices/', blank=True, null=True)
 
     def __str__(self):
         return f"Order {self.id} by {self.user.username}"

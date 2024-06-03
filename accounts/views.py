@@ -195,3 +195,52 @@ class UserOrdersView(generics.ListAPIView):
 
     def get_queryset(self):
         return Order.objects.filter(user=self.request.user)
+    
+    
+    
+import logging
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from django.contrib.auth.models import User
+from .serializers import UserSerializer
+
+logger = logging.getLogger(__name__)
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_user_profile(request, user_id):
+    logger.debug(f'Received user_id: {user_id}')
+    try:
+        user = User.objects.get(id=user_id)
+        serializer = UserSerializer(user)
+        return Response(serializer.data)
+    except User.DoesNotExist:
+        logger.error(f'User with id {user_id} not found')
+        return Response({"error": "User not found"}, status=404)
+
+
+@api_view(['PUT'])
+@permission_classes([AllowAny])
+def update_user_profile(request, user_id):
+    logger.debug(f'Received user_id: {user_id}')
+    try:
+        user = User.objects.get(id=user_id)
+        serializer = UserSerializer(user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=400)
+    except User.DoesNotExist:
+        logger.error(f'User with id {user_id} not found')
+        return Response({"error": "User not found"}, status=404)
+
+
+
+class UserOrdersView(generics.ListAPIView):
+    serializer_class = OrderSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def get_queryset(self):
+        user_id = self.kwargs['user_id']
+        return Order.objects.filter(user_id=user_id)
