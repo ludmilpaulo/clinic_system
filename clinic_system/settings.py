@@ -128,7 +128,7 @@ WSGI_APPLICATION = 'clinic_system.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'clinic_system',
+        'NAME': 'ludmil$clinic_system',
         'USER': 'ludmil',
         'PASSWORD': 'Maitland@2024',
         'HOST': 'ludmil.mysql.pythonanywhere-services.com',
