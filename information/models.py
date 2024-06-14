@@ -84,6 +84,24 @@ class Team(models.Model):
 
 
 
+
+class Chat(models.Model):
+   # order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='chat_messages')
+    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
+    message = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.message
+    
+    
+from django.template.loader import render_to_string
+from django.core.mail import send_mail
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.conf import settings
+import logging
+
 class Contact(models.Model):
     subject = models.CharField(max_length=50)
     email = models.EmailField()
@@ -99,11 +117,28 @@ class Contact(models.Model):
     def __str__(self):
         return self.subject
 
-class Chat(models.Model):
-   # order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='chat_messages')
-    sender = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sent_messages')
-    message = models.TextField()
-    timestamp = models.DateTimeField(auto_now_add=True)
+logger = logging.getLogger(__name__)
 
-    def __str__(self):
-        return self.message
+@receiver(post_save, sender=Contact)
+def send_confirmation_email(sender, instance, created, **kwargs):
+    if created:
+        subject = "Thank you for contacting Men's Clinic"
+        logo_url = f"{settings.ALLOWED_HOSTS[0]}/media/logo/logo2.png"
+        message = render_to_string('contact_confirmation_email.html', {
+            'subject': instance.subject,
+            'message': instance.message,
+            'logo_url': logo_url
+        })
+        logger.info("Attempting to send email to %s", instance.email)
+        try:
+            send_mail(
+                subject,
+                '',  # Plain text message
+                settings.EMAIL_HOST_USER,
+                [instance.email],
+                fail_silently=False,
+                html_message=message
+            )
+            logger.info("Email sent successfully to %s", instance.email)
+        except Exception as e:
+            logger.error("Error sending email: %s", e)

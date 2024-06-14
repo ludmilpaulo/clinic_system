@@ -7,12 +7,19 @@ from accounts.models import DoctorProfile, PatientProfile
 
 class Image(models.Model):
     image = models.ImageField(max_length=3000, default=None, blank=True, upload_to='drug_images/')
+    class Meta:
+        verbose_name = 'Product Image'
+        verbose_name_plural = 'Products Images'
 
     def __str__(self):
         return self.image.name
 
 class ConsultationCategory(models.Model):
     name = models.CharField(max_length=100)
+
+    class Meta:
+        verbose_name = 'Product Category'
+        verbose_name_plural = 'Products Categories'
 
     def __str__(self):
         return self.name
@@ -27,8 +34,13 @@ class Drug(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     quantity_available = models.PositiveIntegerField(default=0)
 
+    class Meta:
+        verbose_name = 'Product'
+        verbose_name_plural = 'Products'
+
     def __str__(self):
         return f"{self.name} - {self.quantity_available} in stock"
+
 
     @property
     def category_name(self):
