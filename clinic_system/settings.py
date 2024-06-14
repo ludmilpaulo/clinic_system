@@ -128,10 +128,10 @@ WSGI_APPLICATION = 'clinic_system.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'ludmil$clinic_system',
-        'USER': 'ludmil',
+        'NAME': 'maindoagency$clinic_system',
+        'USER': 'maindoagency',
         'PASSWORD': 'Maitland@2024',
-        'HOST': 'ludmil.mysql.pythonanywhere-services.com',
+        'HOST': 'maindoagency.mysql.pythonanywhere-services.com',
         'PORT': '3306',
     }
 }
