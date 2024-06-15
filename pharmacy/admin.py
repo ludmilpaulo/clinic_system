@@ -1,6 +1,4 @@
 from django.contrib import admin
-
-from pharmacy.forms import MultipleImageUploadForm
 from .models import Drug, Image, Prescription, PrescriptionDrug, ConsultationCategory
 from clinic_system.admin import custom_admin_site  # Import custom admin site
 
@@ -26,24 +24,13 @@ class PrescriptionDrugAdmin(admin.ModelAdmin):
     list_filter = ('drug',)
     search_fields = ('prescription__prescription_number', 'drug__name')
 
-class ImageAdmin(admin.ModelAdmin):
-    form = MultipleImageUploadForm
-
-    def save_model(self, request, obj, form, change):
-        files = request.FILES.getlist('image')
-        for f in files:
-            instance = Image(image=f)
-            instance.save()
-
-    def save_related(self, request, form, formsets, change):
-        pass
-
-    def response_add(self, request, obj, post_url_continue=None):
-        return super().response_add(request, obj, post_url_continue)
+#@admin.register(Image)
+#class ImageAdmin(admin.ModelAdmin):
+    pass
 
 custom_admin_site.register(ConsultationCategory)
 custom_admin_site.register(Drug, DrugAdmin)
-custom_admin_site.register(Image, ImageAdmin)
+custom_admin_site.register(Image)
 #custom_admin_site.register(PrescriptionDrug, PrescriptionDrugAdmin)
 
 admin.site.register(ConsultationCategory)
