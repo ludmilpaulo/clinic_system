@@ -1,0 +1,12 @@
+<!-- templates/admin/multiple_upload.html -->
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+  <h1>{% trans "Upload Multiple Images" %}</h1>
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="button">{% trans "Upload" %}</button>
+  </form>
+{% endblock %}
