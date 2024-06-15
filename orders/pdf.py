@@ -18,7 +18,7 @@ def generate_order_pdf(order, request=None):
     html_string = render_to_string('invoice_template.html', {'order': order, 'about_us': about_us})
 
     buffer = BytesIO()
-
+    
     if request:
         pisa_status = pisa.CreatePDF(html_string, dest=buffer, link_callback=lambda uri, rel: request.build_absolute_uri(uri))
     else:

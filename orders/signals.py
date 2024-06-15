@@ -43,10 +43,9 @@ def order_status_changed(sender, instance, **kwargs):
 
 @receiver(post_save, sender=Order)
 def update_order_invoice(sender, instance, **kwargs):
-    if 'status' in instance.get_dirty_fields():
+    if hasattr(instance, '_previous_status') and instance._previous_status != instance.status:
         pdf_content = generate_order_pdf(instance)  # Call without request
         if pdf_content:
             pdf_path = f'invoices/order_{instance.id}.pdf'
             instance.invoice.save(pdf_path, ContentFile(pdf_content), save=False)
             instance.save(update_fields=['invoice'])
-
