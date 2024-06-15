@@ -1,6 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Order Confirmation</title>
     <style>
         body {
@@ -18,18 +20,32 @@
             padding: 20px;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        .header {
+            background: linear-gradient(to right, #3b82f6, #2563eb, #1e40af);
+            padding: 20px;
+            border-radius: 10px 10px 0 0;
+            color: white;
+        }
+        .header img {
+            max-width: 150px;
+            margin-bottom: 10px;
         }
         h1 {
-            color: #007BFF;
+            margin: 0;
+            font-size: 24px;
         }
         p {
             line-height: 1.6;
+            margin: 10px 0;
         }
         .order-details {
             margin: 20px 0;
             padding: 10px;
             background-color: #f9f9f9;
             border-radius: 5px;
+            text-align: left;
         }
         .footer {
             margin-top: 20px;
@@ -38,11 +54,29 @@
             text-align: center;
             color: #777;
         }
+        .btn {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 16px;
+            color: white;
+            background: linear-gradient(to right, #3b82f6, #2563eb, #1e40af);
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .btn:hover {
+            background: linear-gradient(to right, #2563eb, #1e40af, #1e3a8a);
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Thank you for your order, {{ user.username }}!</h1>
+        <div class="header">
+            <img src="https://ludmil.pythonanywhere.com/media/logo/logo2_w3URzZg.png" alt="Men's Clinic Logo">
+            <h1>Thank you for your order, {{ user.username }}!</h1>
+        </div>
         <p>Your order # {{ order.id }} has been received and is being processed.</p>
         <div class="order-details">
             <h2>Order Details:</h2>
@@ -51,8 +85,9 @@
         </div>
         <p>If you have any questions, feel free to <a href="mailto:support@example.com">contact our support team</a>.</p>
         <p>Thank you for shopping with us!</p>
+        <a href="#" class="btn">View Order</a>
         <div class="footer">
-            <p>&copy; {{ year }} Men's clinic. All rights reserved.</p>
+            <p>&copy; {{ year }} Men's Clinic. All rights reserved.</p>
         </div>
     </div>
 </body>
