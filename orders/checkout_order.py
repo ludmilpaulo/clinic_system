@@ -98,7 +98,7 @@ def checkout(request):
                 drug.save()
                 print("Drug quantity updated for:", drug.name)
 
-            pdf_content = generate_order_pdf(order)
+            pdf_content = generate_order_pdf(order, request)  # Pass the request object here
             pdf_path = os.path.join(MEDIA_ROOT, 'invoices', f'order_{order.id}.pdf')
             print(f"PDF path: {pdf_path}")
 
