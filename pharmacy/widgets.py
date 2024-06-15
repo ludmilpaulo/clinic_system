@@ -9,3 +9,4 @@ class MultipleFileInput(ClearableFileInput):
         if attrs is None:
             attrs = {}
         attrs.update({'multiple': True})
+        self.attrs = attrs

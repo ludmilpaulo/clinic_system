@@ -47,7 +47,7 @@ class ImageAdmin(admin.ModelAdmin):
                     instance = Image(image=f)
                     instance.save()
                 self.message_user(request, "Images uploaded successfully")
-                return redirect("admin:app_image_changelist")
+                return redirect("admin:pharmacy_image_changelist")
         else:
             form = MultipleImageUploadForm()
         context = {
