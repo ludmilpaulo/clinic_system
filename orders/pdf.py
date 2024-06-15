@@ -1,26 +1,24 @@
-from io import BytesIO
-from reportlab.lib.pagesizes import letter
-from reportlab.pdfgen import canvas
+from django.template.loader import render_to_string
+from django.http import HttpResponse
+from django.conf import settings
+from information.models import AboutUs
+from weasyprint import HTML
+import os
+from .models import Order
 
-def generate_order_pdf(order):
-    buffer = BytesIO()
-    pdf = canvas.Canvas(buffer, pagesize=letter)
-    pdf.setTitle(f"Order {order.id}")
+def generate_order_pdf(order, request):
+    about_us = AboutUs.objects.first()  # Assuming there's only one AboutUs entry
+    html_string = render_to_string('invoice_template.html', {'order': order, 'about_us': about_us})
+    
+    html = HTML(string=html_string, base_url=request.build_absolute_uri())
+    pdf_file = html.write_pdf()
 
-    pdf.drawString(100, 750, f"Order ID: {order.id}")
-    pdf.drawString(100, 730, f"User: {order.user.username}")
-    pdf.drawString(100, 710, f"Total Price: {order.total_price}")
-    pdf.drawString(100, 690, f"Address: {order.address}, {order.city}, {order.postal_code}, {order.country}")
-    pdf.drawString(100, 670, f"Payment Method: {order.payment_method}")
-    pdf.drawString(100, 650, "Items:")
+    return pdf_file
 
-    y = 630
-    for item in order.items.all():
-        pdf.drawString(100, y, f"{item.quantity} x {item.drug.name} @ {item.price} each")
-        y -= 20
+def download_invoice(request, order_id):
+    order = Order.objects.get(id=order_id)
+    pdf = generate_order_pdf(order)
 
-    pdf.showPage()
-    pdf.save()
-
-    buffer.seek(0)
-    return buffer.read()
+    response = HttpResponse(pdf, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="invoice_order_{order.id}.pdf"'
+    return response
