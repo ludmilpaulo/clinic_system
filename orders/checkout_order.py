@@ -1,19 +1,22 @@
-import os
-from django.utils.timezone import now
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.authtoken.models import Token
 from django.db import transaction
 from django.core.mail import EmailMessage
 from django.template.loader import render_to_string
-from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes, csrf_exempt
-from rest_framework.permissions import AllowAny
-from rest_framework.response import Response
-from rest_framework.authtoken.models import Token
+from django.utils.timezone import now
 from .models import Order, OrderItem
 from .serializers import OrderSerializer
-from .utils import send_order_email, generate_order_pdf
+from .utils import send_order_email
+from .pdf import generate_order_pdf  # Correct import for generate_order_pdf
 from django.contrib.auth.models import User
 from pharmacy.models import Drug
 from clinic_system.settings import MEDIA_ROOT
+import os
+
 
 @csrf_exempt
 @api_view(['POST'])

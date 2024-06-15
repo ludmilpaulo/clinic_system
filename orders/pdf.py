@@ -7,7 +7,6 @@ def generate_order_pdf(order):
     pdf = canvas.Canvas(buffer, pagesize=letter)
     pdf.setTitle(f"Order {order.id}")
 
-    # Add content to PDF
     pdf.drawString(100, 750, f"Order ID: {order.id}")
     pdf.drawString(100, 730, f"User: {order.user.username}")
     pdf.drawString(100, 710, f"Total Price: {order.total_price}")
