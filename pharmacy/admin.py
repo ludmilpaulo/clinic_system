@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import Drug, Image, Prescription, PrescriptionDrug, ConsultationCategory
+from clinic_system.admin import custom_admin_site  # Import custom admin site
 
 class DrugAdmin(admin.ModelAdmin):
     list_display = ('name', 'price', 'quantity_available')
@@ -12,7 +13,6 @@ class PrescriptionAdmin(admin.ModelAdmin):
     search_fields = ('prescription_number', 'patient__user__username', 'prescribed_by__user__username')
     date_hierarchy = 'issue_date'
 
-    # This method is used to display drugs in the prescription within the admin change view
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
         if obj:
@@ -23,11 +23,16 @@ class PrescriptionDrugAdmin(admin.ModelAdmin):
     list_display = ('prescription', 'drug', 'quantity')
     list_filter = ('drug',)
     search_fields = ('prescription__prescription_number', 'drug__name')
-@admin.register(Image)
-class ImageAdmin(admin.ModelAdmin):
+
+#@admin.register(Image)
+#class ImageAdmin(admin.ModelAdmin):
     pass
-# Register your models here.
+
+custom_admin_site.register(ConsultationCategory)
+custom_admin_site.register(Drug, DrugAdmin)
+custom_admin_site.register(Image)
+#custom_admin_site.register(PrescriptionDrug, PrescriptionDrugAdmin)
+
 admin.site.register(ConsultationCategory)
 admin.site.register(Drug, DrugAdmin)
-admin.site.register(Prescription, PrescriptionAdmin)
 admin.site.register(PrescriptionDrug, PrescriptionDrugAdmin)

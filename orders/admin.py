@@ -1,7 +1,6 @@
-# orders/admin.py
-
 from django.contrib import admin
 from .models import Order, OrderItem
+from clinic_system.admin import custom_admin_site  # Import the custom admin site
 
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
@@ -29,4 +28,4 @@ class OrderAdmin(admin.ModelAdmin):
         }),
     )
 
-admin.site.register(Order, OrderAdmin)
+custom_admin_site.register(Order, OrderAdmin)

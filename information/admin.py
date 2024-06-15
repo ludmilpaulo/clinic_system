@@ -1,4 +1,5 @@
 from django.contrib import admin
+from clinic_system.admin import custom_admin_site
 from .models import (
     Image,
     Carousel,
@@ -14,6 +15,7 @@ from .models import (
 class ImageAdmin(admin.ModelAdmin):
     list_display = ('id', 'image')
     search_fields = ('image',)
+
 
 # Register the Carousel model with a custom admin to display many-to-many relationships
 @admin.register(Carousel)
@@ -53,3 +55,6 @@ class ChatAdmin(admin.ModelAdmin):
     list_display = ('id', 'sender', 'message', 'timestamp')
     search_fields = ('sender__username', 'message')
     list_filter = ('timestamp',)
+
+
+custom_admin_site.register(AboutUs)

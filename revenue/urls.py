@@ -1,5 +1,4 @@
 from django.urls import path, include
-from rest_framework.routers import DefaultRouter
 from revenue.views import location_statistics, sales_summary, user_statistics
 
 

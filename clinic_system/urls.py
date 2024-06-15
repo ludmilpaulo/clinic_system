@@ -1,10 +1,12 @@
+from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
-from .admin import custom_admin_site  # Import the custom admin site
+from .admin import custom_admin_site  # Import custom admin site
 
 urlpatterns = [
-    path('admin/', custom_admin_site.urls),  # Use custom admin site here
+    path('clinic/admin/', custom_admin_site.urls, name='custom_admin'),  # Use custom admin site here with unique namespace
+   # path('original-admin/', admin.site.urls, name='admin'),  # Use original admin site here with unique namespace
     path('account/', include('accounts.urls')),
     path('appointment/', include('appointments.urls')),
     path('manager/', include('management.urls')),
