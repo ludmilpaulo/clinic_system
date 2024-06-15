@@ -17,7 +17,6 @@ from pharmacy.models import Drug
 from clinic_system.settings import MEDIA_ROOT
 import os
 
-
 @csrf_exempt
 @api_view(['POST'])
 @permission_classes([AllowAny])
