@@ -1,11 +1,12 @@
 from rest_framework import serializers
 from .models import Order, OrderItem
-from pharmacy.models import Drug
 
 class OrderItemSerializer(serializers.ModelSerializer):
+    drug_name = serializers.ReadOnlyField(source='drug.name')
+
     class Meta:
         model = OrderItem
-        fields = ['id', 'order', 'drug', 'quantity', 'price']
+        fields = ['id', 'order', 'drug', 'drug_name', 'quantity', 'price']
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
