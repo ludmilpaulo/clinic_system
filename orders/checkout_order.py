@@ -103,6 +103,7 @@ def checkout(request):
 
             pdf_content = generate_order_pdf(order, request)  # Pass the request object here
             if pdf_content is None:
+                logger.error("Error generating PDF for order: %s", order.id)
                 return Response({'detail': 'Error generating PDF.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             pdf_path = os.path.join(MEDIA_ROOT, 'invoices', f'order_{order.id}.pdf')
