@@ -1,7 +1,12 @@
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 import pymysql
+
 pymysql.install_as_MySQLdb()
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -10,14 +15,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-df6ft!hc__ki2aga#ilxuir_ta3ku0-1x1-_h1&131vib_ll27'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-df6ft!hc__ki2aga#ilxuir_ta3ku0-1x1-_h1&131vib_ll27')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = ['*']
 
-FRONTEND_URL = 'https://www.trustmenclinic.com'
+FRONTEND_URL = os.getenv('FRONTEND_URL', 'https://www.trustmenclinic.com')
 
 # Application definition
 INSTALLED_APPS = [
@@ -118,23 +123,30 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'clinic_system.wsgi.application'
 
-# Database
-# https://docs.djangoproject.com/en/5.0/ref/settings/#databases
+# Database configuration
+DJANGO_ENV = os.getenv('DJANGO_ENV')
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'maindoagency$clinic_system',
-        'USER': 'maindoagency',
-        'PASSWORD': 'Maitland@2024',
-        'HOST': 'maindoagency.mysql.pythonanywhere-services.com',
-        'PORT': '3306',
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'"
+if DJANGO_ENV == 'production':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.mysql',
+            'NAME': os.getenv('PROD_DB_NAME'),
+            'USER': os.getenv('PROD_DB_USER'),
+            'PASSWORD': os.getenv('PROD_DB_PASSWORD'),
+            'HOST': os.getenv('PROD_DB_HOST'),
+            'PORT': os.getenv('PROD_DB_PORT', '3306'),
+            'OPTIONS': {
+                'init_command': "SET sql_mode='STRICT_TRANS_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION'"
+            }
         }
     }
-}
-
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -277,7 +289,6 @@ CKEDITOR_5_CONFIGS = {
 TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID')
 TWILIO_AUTH_TOKEN = ''
 TWILIO_WHATSAPP_NUMBER = ''
-
 
 
 SERVER_EMAIL = 'support@maindodigital.com' # this is for to send 500 mail to admins

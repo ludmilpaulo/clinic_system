@@ -17,15 +17,19 @@ from pharmacy.models import Drug
 from clinic_system.settings import MEDIA_ROOT
 import os
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 @csrf_exempt
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def checkout(request):
     data = request.data
-    print("Request data:", data)
+    logger.info("Request data: %s", data)
 
     token_key = data.get('token', None)
-    print("Token key:", token_key)
+    logger.info("Token key: %s", token_key)
     user = None
     new_user = False
 
@@ -33,42 +37,42 @@ def checkout(request):
         try:
             token = Token.objects.get(key=token_key)
             user = token.user
-            print("User retrieved from token:", user)
+            logger.info("User retrieved from token: %s", user)
         except Token.DoesNotExist:
-            print("Token does not exist.")
+            logger.warning("Token does not exist.")
 
     if not user:
         user_id = data.get('user_id', None)
-        print("User ID:", user_id)
+        logger.info("User ID: %s", user_id)
         if user_id:
             try:
                 user = User.objects.get(id=user_id)
-                print("User retrieved from user_id:", user)
+                logger.info("User retrieved from user_id: %s", user)
             except User.DoesNotExist:
-                print("User does not exist for user_id:", user_id)
+                logger.warning("User does not exist for user_id: %s", user_id)
 
     if not user:
         email = data.get('email')
         try:
             user = User.objects.get(email=email)
-            print("Existing user retrieved:", user)
+            logger.info("Existing user retrieved: %s", user)
         except User.DoesNotExist:
             name = data.get('name', 'user')
             email = data.get('email', f'{name}@example.com')
             password = data.get('password', email)
             username = f'{name[0]}{User.objects.count() + 1}'
-            print("Creating new user with username:", username)
+            logger.info("Creating new user with username: %s", username)
             user = User.objects.create_user(username=username, email=email, password=password)
             new_user = True
-            print("New user created:", user)
+            logger.info("New user created: %s", user)
 
             token = Token.objects.create(user=user)
             token_key = token.key
-            print("Token created for new user:", token_key)
+            logger.info("Token created for new user: %s", token_key)
 
     try:
         with transaction.atomic():
-            print("Creating Order object...")
+            logger.info("Creating Order object...")
             order = Order.objects.create(
                 user=user,
                 total_price=data['total_price'],
@@ -78,13 +82,13 @@ def checkout(request):
                 country=data['country'],
                 payment_method=data['payment_method']
             )
-            print("Order object created:", order)
+            logger.info("Order object created: %s", order)
 
             for item in data['items']:
                 drug = Drug.objects.get(id=item['id'])
                 if drug.quantity_available < item['quantity']:
                     raise ValueError(f"Not enough stock for {drug.name}")
-                print("Creating OrderItem object for drug:", drug)
+                logger.info("Creating OrderItem object for drug: %s", drug)
 
                 OrderItem.objects.create(
                     order=order,
@@ -92,23 +96,23 @@ def checkout(request):
                     quantity=item['quantity'],
                     price=drug.price
                 )
-                print("OrderItem object created for drug:", drug.name)
+                logger.info("OrderItem object created for drug: %s", drug.name)
                 drug.quantity_available -= item['quantity']
                 drug.save()
-                print("Drug quantity updated for:", drug.name)
+                logger.info("Drug quantity updated for: %s", drug.name)
 
             pdf_content = generate_order_pdf(order, request)  # Pass the request object here
             if pdf_content is None:
                 return Response({'detail': 'Error generating PDF.'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             pdf_path = os.path.join(MEDIA_ROOT, 'invoices', f'order_{order.id}.pdf')
-            print(f"PDF path: {pdf_path}")
+            logger.info("PDF path: %s", pdf_path)
 
             with open(pdf_path, 'wb') as pdf_file:
                 pdf_file.write(pdf_content)
             order.invoice = f'invoices/order_{order.id}.pdf'
             order.save(update_fields=['invoice'])
-            print("Invoice saved:", order.invoice)
+            logger.info("Invoice saved: %s", order.invoice)
 
             order_confirmation_email = render_to_string('order_confirmation_email.html', {
                 'user': user,
@@ -133,7 +137,7 @@ def checkout(request):
                     recipient_list=[user.email],
                     attachments=attachments
                 )
-                print("Account details email sent to:", user.email)
+                logger.info("Account details email sent to: %s", user.email)
 
             send_order_email(
                 subject='Order Confirmation',
@@ -141,14 +145,14 @@ def checkout(request):
                 recipient_list=[user.email],
                 attachments=attachments
             )
-            print("Order confirmation email sent to:", user.email)
+            logger.info("Order confirmation email sent to: %s", user.email)
 
             serializer = OrderSerializer(order)
-            print("Order serialized successfully.")
+            logger.info("Order serialized successfully.")
             return Response(serializer.data, status=status.HTTP_201_CREATED)
     except ValueError as ve:
-        print("ValueError:", ve)
+        logger.error("ValueError: %s", ve)
         return Response({'detail': str(ve)}, status=status.HTTP_400_BAD_REQUEST)
     except Exception as e:
-        print("Exception:", e)
+        logger.error("Exception: %s", e)
         return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
